@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { commands, CompletionList, Hover, languages, Uri, workspace } from 'vscode';
+import { commands, CompletionList, DocumentFilter, Hover, languages, Uri, workspace, WorkspaceEdit } from 'vscode';
 import { getLanguageService, LanguageService, TokenType } from 'vscode-html-languageservice';
 
 function isInsideRubyRegion(
@@ -66,6 +66,11 @@ function getRubyVirtualContent(
 export function activate(context: vscode.ExtensionContext) {
   const htmlLanguageService = getLanguageService();
   const virtualDocumentContents = new Map<string, string>();
+  const documentSelector: DocumentFilter = {
+    scheme: 'file',
+    language: 'erb',
+    pattern: '**/*.html.erb',
+  };
 
   context.subscriptions.push(
     workspace.registerTextDocumentContentProvider('embedded-content', {
@@ -78,7 +83,7 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  languages.registerHoverProvider([{ scheme: 'file', language: 'erb' }], {
+  languages.registerHoverProvider(documentSelector, {
     async provideHover(document, position) {
       const documentText = document.getText();
       const isRuby = isInsideRubyRegion(htmlLanguageService, documentText, document.offsetAt(position));
@@ -102,7 +107,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
-  languages.registerCompletionItemProvider([{ scheme: 'file', language: 'erb' }], {
+  languages.registerCompletionItemProvider(documentSelector, {
     async provideCompletionItems(document, position, _token, context) {
       const documentText = document.getText();
       const isRuby = isInsideRubyRegion(htmlLanguageService, documentText, document.offsetAt(position));
