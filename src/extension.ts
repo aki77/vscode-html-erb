@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
-import { commands, CompletionList, DocumentFilter, Hover, languages, LinkedEditingRanges, Range, Uri, workspace, WorkspaceEdit } from 'vscode';
-import { getLanguageService, LanguageService, TokenType } from 'vscode-html-languageservice';
+import { commands, CompletionList, DocumentFilter, Hover, languages, LinkedEditingRanges, Range, TextDocument, Uri, workspace, WorkspaceEdit } from 'vscode';
+import { getLanguageService, LanguageService, TokenType, type TextDocument as LanguageServiceTextDocument, type HTMLDocument } from 'vscode-html-languageservice';
+import { activateAutoInsertion } from './autoInsertion';
 
 function isInsideRubyRegion(
   languageService: LanguageService,
@@ -63,9 +64,16 @@ function getRubyVirtualContent(
   return content;
 }
 
+const toLanguageServiceTextDocument = (document: TextDocument): LanguageServiceTextDocument => ({ ...document, uri: document.uri.toString() });
+
+const toHTMLDocument = (htmlLanguageService: LanguageService, document: TextDocument): HTMLDocument => {
+  return htmlLanguageService.parseHTMLDocument(toLanguageServiceTextDocument(document));
+};
+
 export function activate(context: vscode.ExtensionContext) {
   const htmlLanguageService = getLanguageService();
   const virtualDocumentContents = new Map<string, string>();
+
   const documentSelector: DocumentFilter = {
     scheme: 'file',
     language: 'erb',
@@ -76,78 +84,101 @@ export function activate(context: vscode.ExtensionContext) {
     workspace.registerTextDocumentContentProvider('embedded-content', {
       provideTextDocumentContent: (uri) => {
         const originalUri = uri.path.slice(1).slice(0, uri.path.lastIndexOf('.') - 1);
-        console.log('originalUri', originalUri);
         const decodedUri = decodeURIComponent(originalUri);
         return virtualDocumentContents.get(decodedUri);
       }
     })
   );
 
-  languages.registerHoverProvider(documentSelector, {
-    async provideHover(document, position) {
-      const documentText = document.getText();
-      const isRuby = isInsideRubyRegion(htmlLanguageService, documentText, document.offsetAt(position));
-      const content = isRuby ? getRubyVirtualContent(htmlLanguageService, documentText) : documentText;
-      const ext = isRuby ? 'rb' : 'html';
+  context.subscriptions.push(
+    languages.registerHoverProvider(documentSelector, {
+      async provideHover(document, position) {
+        const documentText = document.getText();
+        const isRuby = isInsideRubyRegion(htmlLanguageService, documentText, document.offsetAt(position));
+        const content = isRuby ? getRubyVirtualContent(htmlLanguageService, documentText) : documentText;
+        const ext = isRuby ? 'rb' : 'html';
 
-      const originalUri = document.uri.toString(true);
-      virtualDocumentContents.set(originalUri, content);
+        const originalUri = document.uri.toString(true);
+        virtualDocumentContents.set(originalUri, content);
 
-      const vdocUriString = `embedded-content://html/${encodeURIComponent(
-        originalUri
-      )}.${ext}`;
-      const vdocUri = Uri.parse(vdocUriString);
+        const vdocUriString = `embedded-content://html/${encodeURIComponent(
+          originalUri
+        )}.${ext}`;
+        const vdocUri = Uri.parse(vdocUriString);
 
-      const results =  await commands.executeCommand<Hover[]>(
-        'vscode.executeHoverProvider',
-        vdocUri,
-        position,
-      );
-      return results[0];
-    }
-  });
+        const results =  await commands.executeCommand<Hover[]>(
+          'vscode.executeHoverProvider',
+          vdocUri,
+          position,
+        );
+        return results[0];
+      }
+    })
+  );
 
-  languages.registerCompletionItemProvider(documentSelector, {
-    async provideCompletionItems(document, position, _token, context) {
-      const documentText = document.getText();
-      const isRuby = isInsideRubyRegion(htmlLanguageService, documentText, document.offsetAt(position));
-      const content = isRuby ? getRubyVirtualContent(htmlLanguageService, documentText) : documentText;
-      const ext = isRuby ? 'rb' : 'html';
+  context.subscriptions.push(
+    languages.registerCompletionItemProvider(documentSelector, {
+      async provideCompletionItems(document, position, _token, context) {
+        const documentText = document.getText();
+        const isRuby = isInsideRubyRegion(htmlLanguageService, documentText, document.offsetAt(position));
+        const content = isRuby ? getRubyVirtualContent(htmlLanguageService, documentText) : documentText;
+        const ext = isRuby ? 'rb' : 'html';
 
-      const originalUri = document.uri.toString(true);
-      virtualDocumentContents.set(originalUri, content);
+        const originalUri = document.uri.toString(true);
+        virtualDocumentContents.set(originalUri, content);
 
-      const vdocUriString = `embedded-content://html/${encodeURIComponent(
-        originalUri
-      )}.${ext}`;
-      const vdocUri = Uri.parse(vdocUriString);
+        const vdocUriString = `embedded-content://html/${encodeURIComponent(
+          originalUri
+        )}.${ext}`;
+        const vdocUri = Uri.parse(vdocUriString);
 
-      return  await commands.executeCommand<CompletionList>(
-        'vscode.executeCompletionItemProvider',
-        vdocUri,
-        position,
-        context.triggerCharacter,
-      );
-    }
-  });
+        return  await commands.executeCommand<CompletionList>(
+          'vscode.executeCompletionItemProvider',
+          vdocUri,
+          position,
+          context.triggerCharacter,
+        );
+      }
+    })
+  );
 
-  languages.registerLinkedEditingRangeProvider(documentSelector, {
-    async provideLinkedEditingRanges(document, position, _token) {
-      const documentText = document.getText();
-      const isRuby = isInsideRubyRegion(htmlLanguageService, documentText, document.offsetAt(position));
-      if (isRuby) {
-        return;
+  context.subscriptions.push(
+    languages.registerLinkedEditingRangeProvider(documentSelector, {
+      async provideLinkedEditingRanges(document, position, _token) {
+        const documentText = document.getText();
+        const isInsideRuby = isInsideRubyRegion(htmlLanguageService, documentText, document.offsetAt(position));
+        if (isInsideRuby) {
+          return;
+        }
+
+        const htmlDocument = toHTMLDocument(htmlLanguageService, document);
+        const ranges = htmlLanguageService.findLinkedEditingRanges(toLanguageServiceTextDocument(document), position, htmlDocument);
+        if (!ranges) {
+          return;
+        }
+
+        return new LinkedEditingRanges(ranges.map(r => new Range(r.start.line, r.start.character, r.end.line, r.end.character)));
+      },
+    })
+  );
+
+  context.subscriptions.push(
+    activateAutoInsertion(async (kind, document, position) => {
+      const isInsideRuby = isInsideRubyRegion(htmlLanguageService, document.getText(), document.offsetAt(position));
+      if (isInsideRuby) {
+        return '';
       }
 
-      const htmlDocument = htmlLanguageService.parseHTMLDocument({ ...document, uri: document.uri.toString() });
-      const ranges = htmlLanguageService.findLinkedEditingRanges({ ...document, uri: document.uri.toString() }, position, htmlDocument);
-      if (!ranges) {
-        return;
-      }
+      const htmlDocument = toHTMLDocument(htmlLanguageService, document);
+      const textDocument = toLanguageServiceTextDocument(document);
 
-      return new LinkedEditingRanges(ranges.map(r => new Range(r.start.line, r.start.character, r.end.line, r.end.character)));
-    },
-  });
+      if (kind === 'autoClose') {
+        return htmlLanguageService.doTagComplete(textDocument, position, htmlDocument) ?? '';
+      } else {
+        return htmlLanguageService.doQuoteComplete(textDocument, position, htmlDocument) ?? '';
+      }
+    }, documentSelector)
+  );
 }
 
 // this method is called when your extension is deactivated
