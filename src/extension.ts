@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { commands, CompletionList, DocumentFilter, Hover, languages, Uri, workspace, WorkspaceEdit } from 'vscode';
+import { commands, CompletionList, DocumentFilter, Hover, languages, LinkedEditingRanges, Range, Uri, workspace, WorkspaceEdit } from 'vscode';
 import { getLanguageService, LanguageService, TokenType } from 'vscode-html-languageservice';
 
 function isInsideRubyRegion(
@@ -129,6 +129,24 @@ export function activate(context: vscode.ExtensionContext) {
         context.triggerCharacter,
       );
     }
+  });
+
+  languages.registerLinkedEditingRangeProvider(documentSelector, {
+    async provideLinkedEditingRanges(document, position, _token) {
+      const documentText = document.getText();
+      const isRuby = isInsideRubyRegion(htmlLanguageService, documentText, document.offsetAt(position));
+      if (isRuby) {
+        return;
+      }
+
+      const htmlDocument = htmlLanguageService.parseHTMLDocument({ ...document, uri: document.uri.toString() });
+      const ranges = htmlLanguageService.findLinkedEditingRanges({ ...document, uri: document.uri.toString() }, position, htmlDocument);
+      if (!ranges) {
+        return;
+      }
+
+      return new LinkedEditingRanges(ranges.map(r => new Range(r.start.line, r.start.character, r.end.line, r.end.character)));
+    },
   });
 }
 
