@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { commands, CompletionList, DocumentFilter, Hover, languages, LinkedEditingRanges, Range, TextDocument, Uri, workspace, WorkspaceEdit } from 'vscode';
+import { commands, CompletionList, DocumentFilter, Hover, languages, LinkedEditingRanges, Range, TextDocument, Uri, workspace } from 'vscode';
 import { getLanguageService, LanguageService, TokenType, type TextDocument as LanguageServiceTextDocument, type HTMLDocument } from 'vscode-html-languageservice';
 import { activateAutoInsertion } from './autoInsertion';
 
@@ -139,7 +139,7 @@ export function activate(context: vscode.ExtensionContext) {
           context.triggerCharacter,
         );
       }
-    })
+    }, '<')
   );
 
   context.subscriptions.push(
