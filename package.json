@@ -14,10 +14,17 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
+    "languages": [
       {
-        "command": "html-erb.helloWorld",
-        "title": "Hello World"
+        "id": "erb",
+        "aliases": [
+          "erb",
+          "Encapsulated Ruby"
+        ],
+        "extensions": [
+          ".erb"
+        ],
+        "configuration": "./language-configuration-erb.json"
       }
     ]
   },
