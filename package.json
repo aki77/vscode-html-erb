@@ -6,6 +6,7 @@
   "engines": {
     "vscode": "^1.71.0"
   },
+  "license": "MIT",
   "categories": [
     "Other"
   ],
@@ -38,7 +39,7 @@
   },
   "devDependencies": {
     "@types/glob": "^7.2.0",
-    "@types/mocha": "^9.1.1",
+    "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
     "@types/vscode": "^1.71.0",
     "@typescript-eslint/eslint-plugin": "^5.31.0",
@@ -47,9 +48,13 @@
     "eslint": "^8.20.0",
     "glob": "^8.0.3",
     "mocha": "^10.0.0",
-    "typescript": "^4.7.4"
+    "typescript": "^5.0.4"
   },
   "dependencies": {
     "vscode-html-languageservice": "^5.0.1"
+  },
+  "volta": {
+    "node": "16.20.0",
+    "yarn": "1.22.19"
   }
 }
