@@ -1,18 +1,24 @@
 {
   "name": "html-erb",
   "displayName": "html-erb",
-  "description": "",
-  "version": "0.0.1",
+  "description": "Enable HTML intellisense in the *.html.erb files",
+  "version": "0.1.0",
+  "publisher": "aki77",
   "engines": {
-    "vscode": "^1.71.0"
+    "vscode": "^1.78.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aki77/vscode-html-erb.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aki77/vscode-html-erb/issues"
   },
   "license": "MIT",
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onLanguage:erb"
-  ],
+  "icon": "images/icon.png",
   "main": "./out/extension.js",
   "contributes": {
     "languages": [
