@@ -70,6 +70,7 @@ const toHTMLDocument = (htmlLanguageService: LanguageService, document: TextDocu
   return htmlLanguageService.parseHTMLDocument(toLanguageServiceTextDocument(document));
 };
 
+// SEE: https://code.visualstudio.com/api/language-extensions/embedded-languages
 export function activate(context: vscode.ExtensionContext) {
   const htmlLanguageService = getLanguageService();
   const virtualDocumentContents = new Map<string, string>();

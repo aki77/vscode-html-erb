@@ -6,13 +6,4 @@ Enable HTML intellisense in the `*.html.erb` files.
 
 - HTML intellisense
 
-## Requirements
-
-TODO
-
-## Extension Settings
-
-TODO
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+![Demo](https://i.gyazo.com/be7b36b7c70104e3ac48e5d1506db64c.gif)
