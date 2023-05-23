@@ -71,6 +71,11 @@ export function activateAutoInsertion(provider: (kind: 'autoQuote' | 'autoClose'
     timeout = setTimeout(() => {
       const position = new Position(rangeStart.line, rangeStart.character + lastChange.text.length);
       provider(kind, document, position).then(text => {
+        // FIXME: Temporary workaround for paste malfunction
+        if(kind === 'autoClose' && lastChange.text.trim().endsWith(text.substring(2))) {
+          return
+        }
+
         if (text && isEnabled[kind]) {
           const activeEditor = window.activeTextEditor;
           if (activeEditor) {
