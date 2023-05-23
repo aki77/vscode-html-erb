@@ -2,7 +2,7 @@
   "name": "html-erb",
   "displayName": "html-erb",
   "description": "Enable HTML intellisense in the *.html.erb files",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "publisher": "aki77",
   "engines": {
     "vscode": "^1.78.0"
